@@ -1,0 +1,64 @@
+# ============================================================================
+# Drift Check — scheduled check for out-of-band changes
+# ============================================================================
+# Runs daily to detect changes made in the Fabric portal outside of CI/CD.
+
+name: Drift Check
+
+on:
+  schedule:
+    - cron: '0 8 * * 1-5'  # Weekdays at 8am UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  PYTHON_VERSION: '3.12'
+  AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+
+jobs:
+  check-drift:
+    name: Check Drift
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [dev, test, prod]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install fab-bundle
+        run: pip install fabric-automation-bundles
+
+      - name: Check drift on ${{ matrix.target }}
+        id: drift
+        run: |
+          fab-bundle drift -f fabric.yml -t ${{ matrix.target }} 2>&1 | tee drift-output.txt
+          if grep -q "Drift detected" drift-output.txt; then
+            echo "drift_found=true" >> $GITHUB_OUTPUT
+          else
+            echo "drift_found=false" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
+      - name: Create issue if drift detected
+        if: steps.drift.outputs.drift_found == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const output = fs.readFileSync('drift-output.txt', 'utf8');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Drift detected in ${{ matrix.target }} environment`,
+              body: `## Drift Report\n\nTarget: \`${{ matrix.target }}\`\nDetected: ${new Date().toISOString()}\n\n\`\`\`\n${output}\n\`\`\`\n\nRun \`fab-bundle deploy -t ${{ matrix.target }}\` to reconcile.`,
+              labels: ['drift', '${{ matrix.target }}']
+            });

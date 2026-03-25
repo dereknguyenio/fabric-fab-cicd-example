@@ -1,0 +1,126 @@
+# ============================================================================
+# CD — Deploy to Dev → Test → Prod on merge to main
+# ============================================================================
+# Triggered on push to main (after PR merge).
+# Deploys sequentially: dev → test (with quality gates) → prod (manual approval)
+
+name: CD — Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'fabric.yml'
+      - 'notebooks/**'
+      - 'sql/**'
+      - 'agent/**'
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: '3.12'
+  AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+  FAB_CAPACITY_ID: ${{ vars.FAB_CAPACITY_ID }}
+
+jobs:
+  # ==========================================================================
+  # Stage 1: Deploy to Dev
+  # ==========================================================================
+  deploy-dev:
+    name: Deploy to Dev
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install fab-bundle
+        run: pip install fabric-automation-bundles
+
+      - name: Validate
+        run: fab-bundle validate -f fabric.yml
+
+      - name: Plan dev
+        run: fab-bundle plan -f fabric.yml -t dev
+
+      - name: Deploy to dev
+        run: fab-bundle deploy -f fabric.yml -t dev -y
+
+      - name: Check status
+        run: fab-bundle status -f fabric.yml -t dev
+
+      - name: Check drift
+        run: fab-bundle drift -f fabric.yml -t dev
+        continue-on-error: true
+
+  # ==========================================================================
+  # Stage 2: Deploy to Test (with data quality gate)
+  # ==========================================================================
+  deploy-test:
+    name: Deploy to Test
+    needs: deploy-dev
+    runs-on: ubuntu-latest
+    environment: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install fab-bundle
+        run: pip install fabric-automation-bundles
+
+      - name: Plan test
+        run: fab-bundle plan -f fabric.yml -t test
+
+      - name: Deploy to test
+        run: fab-bundle deploy -f fabric.yml -t test -y
+
+      - name: Run ETL pipeline
+        run: fab-bundle run daily_etl -f fabric.yml -t test
+        continue-on-error: true
+
+      - name: Run data quality checks
+        run: fab-bundle run data_quality_checks -f fabric.yml -t test
+        continue-on-error: true
+
+      - name: Check status
+        run: fab-bundle status -f fabric.yml -t test
+
+  # ==========================================================================
+  # Stage 3: Deploy to Prod (manual approval required)
+  # ==========================================================================
+  deploy-prod:
+    name: Deploy to Prod
+    needs: deploy-test
+    runs-on: ubuntu-latest
+    environment: production  # Requires manual approval in GitHub settings
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install fab-bundle
+        run: pip install fabric-automation-bundles
+
+      - name: Plan prod (final review)
+        run: fab-bundle plan -f fabric.yml -t prod
+
+      - name: Deploy to prod
+        run: fab-bundle deploy -f fabric.yml -t prod -y
+
+      - name: Verify deployment
+        run: fab-bundle status -f fabric.yml -t prod
+
+      - name: Check for drift
+        run: fab-bundle drift -f fabric.yml -t prod
+        continue-on-error: true

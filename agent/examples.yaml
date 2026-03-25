@@ -1,0 +1,20 @@
+examples:
+  - question: "What was yesterday's revenue?"
+    sql: "SELECT revenue, total_orders FROM gold.daily_revenue WHERE order_date = DATEADD(day, -1, CAST(GETDATE() AS DATE))"
+    explanation: "Pulls revenue and order count for the previous day from the daily summary."
+
+  - question: "Who are our top 5 customers?"
+    sql: "SELECT TOP 5 customer_id, lifetime_value, lifetime_orders FROM gold.customer_ltv ORDER BY lifetime_value DESC"
+    explanation: "Ranks customers by total lifetime value."
+
+  - question: "What's our best-selling product?"
+    sql: "SELECT TOP 1 product_id, total_revenue, total_orders FROM gold.product_performance ORDER BY total_revenue DESC"
+    explanation: "Finds the product with the highest total revenue."
+
+  - question: "How is revenue trending this week?"
+    sql: "SELECT order_date, revenue, total_orders FROM gold.daily_revenue WHERE order_date >= DATEADD(day, -7, CAST(GETDATE() AS DATE)) ORDER BY order_date"
+    explanation: "Shows daily revenue for the past 7 days to identify trends."
+
+  - question: "Give me an executive summary"
+    sql: "SELECT * FROM vw_executive_summary"
+    explanation: "High-level KPIs from the executive summary view."

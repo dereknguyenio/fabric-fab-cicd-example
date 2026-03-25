@@ -1,0 +1,95 @@
+# ============================================================================
+# CI — Validate & Plan on every Pull Request
+# ============================================================================
+# Runs on every PR to main. Validates the bundle and shows a deployment plan.
+# No resources are created or modified — this is read-only.
+
+name: CI — Validate & Plan
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'fabric.yml'
+      - 'notebooks/**'
+      - 'sql/**'
+      - 'agent/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  PYTHON_VERSION: '3.12'
+  AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+  FAB_CAPACITY_ID: ${{ vars.FAB_CAPACITY_ID }}
+
+jobs:
+  validate:
+    name: Validate Bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install fab-bundle
+        run: pip install fabric-automation-bundles
+
+      - name: Validate bundle definition
+        run: fab-bundle validate -f fabric.yml
+
+  plan-dev:
+    name: Plan Dev
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install fab-bundle
+        run: pip install fabric-automation-bundles
+
+      - name: Plan dev deployment
+        run: fab-bundle plan -f fabric.yml -t dev
+
+  plan-test:
+    name: Plan Test
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install fab-bundle
+        run: pip install fabric-automation-bundles
+
+      - name: Plan test deployment
+        run: fab-bundle plan -f fabric.yml -t test
+
+  plan-prod:
+    name: Plan Prod
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install fab-bundle
+        run: pip install fabric-automation-bundles
+
+      - name: Plan prod deployment
+        run: fab-bundle plan -f fabric.yml -t prod

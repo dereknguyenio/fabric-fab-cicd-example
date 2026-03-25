@@ -1,0 +1,52 @@
+# ============================================================================
+# Destroy — Tear down an environment (manual trigger only)
+# ============================================================================
+# Use this to clean up dev/test environments. Prod requires extra confirmation.
+
+name: Destroy Environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Target environment to destroy'
+        required: true
+        type: choice
+        options:
+          - dev
+          - test
+      confirm:
+        description: 'Type the target name to confirm'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: '3.12'
+  AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+
+jobs:
+  destroy:
+    name: Destroy ${{ inputs.target }}
+    runs-on: ubuntu-latest
+    if: inputs.confirm == inputs.target
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install fab-bundle
+        run: pip install fabric-automation-bundles
+
+      - name: Destroy ${{ inputs.target }}
+        run: fab-bundle destroy -f fabric.yml -t ${{ inputs.target }} -y
+
+      - name: Verify destruction
+        run: fab-bundle status -f fabric.yml -t ${{ inputs.target }}
+        continue-on-error: true
