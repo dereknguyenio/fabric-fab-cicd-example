@@ -99,6 +99,32 @@ resources:
       instructions: ./agent/instructions.md
 
 # ---------------------------------------------------------------------------
+# Security — workspace roles + OneLake data access roles
+# ---------------------------------------------------------------------------
+# Users/groups listed here are automatically granted access when the
+# workspace is created by the service principal in CI/CD.
+# Use Entra ID object GUIDs (not display names) for reliability.
+security:
+  roles:
+    - name: workspace_admins
+      entra_user: "6e9de74e-f24e-4449-8659-c2be3fc09d54"  # admin@MngEnvMCAP579776
+      workspace_role: admin
+
+    - name: data_engineers
+      entra_user: "6e9de74e-f24e-4449-8659-c2be3fc09d54"  # same user for demo
+      workspace_role: contributor
+      onelake_roles:
+        - tables: ["*"]
+          permissions: [read, write]
+
+    - name: analysts
+      entra_user: "6e9de74e-f24e-4449-8659-c2be3fc09d54"  # same user for demo
+      workspace_role: viewer
+      onelake_roles:
+        - tables: ["*"]
+          permissions: [read]
+
+# ---------------------------------------------------------------------------
 # Targets
 # ---------------------------------------------------------------------------
 targets:
