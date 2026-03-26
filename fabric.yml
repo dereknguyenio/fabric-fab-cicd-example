@@ -99,6 +99,17 @@ resources:
       instructions: ./agent/instructions.md
 
 # ---------------------------------------------------------------------------
+# Security — grant workspace access so users aren't locked out
+# ---------------------------------------------------------------------------
+# When the service principal creates workspaces in CI/CD, no humans have access.
+# Add your Entra user/group GUIDs here. Set ADMIN_USER_ID as a GitHub variable.
+security:
+  roles:
+    - name: workspace_admins
+      entra_user: "${env.ADMIN_USER_ID}"
+      workspace_role: admin
+
+# ---------------------------------------------------------------------------
 # Targets
 # ---------------------------------------------------------------------------
 # Configure these via GitHub Actions:

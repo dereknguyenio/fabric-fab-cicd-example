@@ -25,6 +25,7 @@ env:
   AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
   AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
   FAB_CAPACITY_ID: ${{ vars.FAB_CAPACITY_ID }}
+  ADMIN_USER_ID: ${{ vars.ADMIN_USER_ID }}
 
 jobs:
   # ==========================================================================
@@ -42,7 +43,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install fab-bundle
-        run: pip install fabric-automation-bundles
+        run: pip install "fabric-automation-bundles>=1.0.1"
 
       - name: Doctor (diagnose setup)
         run: fab-bundle doctor
@@ -96,7 +97,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install fab-bundle
-        run: pip install fabric-automation-bundles
+        run: pip install "fabric-automation-bundles>=1.0.1"
 
       - name: Plan test
         run: fab-bundle plan -f fabric.yml -t test
@@ -131,7 +132,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install fab-bundle
-        run: pip install fabric-automation-bundles
+        run: pip install "fabric-automation-bundles>=1.0.1"
 
       - name: Plan prod (final review)
         run: fab-bundle plan -f fabric.yml -t prod
