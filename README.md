@@ -78,19 +78,19 @@ Grant the service principal access to your Fabric workspaces in the Fabric Admin
 
 Go to your repo → Settings → Secrets and variables → Actions.
 
-**Secrets (required):**
+**Secrets (all required):**
 
 | Secret | Description |
 |--------|-------------|
 | `AZURE_TENANT_ID` | Azure AD tenant GUID |
 | `AZURE_CLIENT_ID` | Service principal app ID |
-| `AZURE_CLIENT_SECRET` | Service principal secret |
-
-**Variables (required):**
-
-| Variable | Description |
-|----------|-------------|
+| `AZURE_CLIENT_SECRET` | Service principal secret value (not the ID) |
 | `FAB_CAPACITY_ID` | Fabric capacity GUID |
+| `ADMIN_USER_ID` | Your Entra user object GUID (so you're not locked out of workspaces) |
+
+Find your capacity GUID: `az rest --method get --url "https://api.fabric.microsoft.com/v1/capacities" --resource "https://api.fabric.microsoft.com"`
+
+Find your user GUID: `az ad signed-in-user show --query id -o tsv`
 
 ### 4. Configure GitHub Environments
 

@@ -24,8 +24,8 @@ env:
   AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
   AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
   AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-  FAB_CAPACITY_ID: ${{ vars.FAB_CAPACITY_ID }}
-  ADMIN_USER_ID: ${{ vars.ADMIN_USER_ID }}
+  FAB_CAPACITY_ID: ${{ secrets.FAB_CAPACITY_ID }}
+  ADMIN_USER_ID: ${{ secrets.ADMIN_USER_ID }}
 
 jobs:
   # ==========================================================================
@@ -72,7 +72,22 @@ jobs:
         run: fab-bundle plan -f fabric.yml --target dev
 
       - name: Deploy to dev
-        run: fab-bundle deploy -f fabric.yml --target dev -y
+        run: |
+          fab-bundle deploy -f fabric.yml --target dev -y 2>&1 || {
+            echo ""
+            echo "=========================================="
+            echo "DEPLOY FAILED — troubleshooting steps:"
+            echo "=========================================="
+            echo "1. Check the error message above"
+            echo "2. Run 'fab-bundle doctor' to diagnose"
+            echo "3. Common fixes:"
+            echo "   - Authentication: check AZURE_TENANT_ID, CLIENT_ID, CLIENT_SECRET secrets"
+            echo "   - Capacity: check FAB_CAPACITY_ID is a valid GUID and capacity is active"
+            echo "   - Naming: lakehouses/warehouses can only use letters, numbers, underscores"
+            echo "   - Docs: https://dereknguyenio.github.io/fabric-automation-bundles/troubleshooting/"
+            echo "=========================================="
+            exit 1
+          }
 
       - name: Check status
         run: fab-bundle status -f fabric.yml --target dev
