@@ -1,4 +1,4 @@
-# Fabric CI/CD Example
+# Fabric CI/CD Examples
 
 End-to-end CI/CD pipeline for Microsoft Fabric using [Fabric Automation Bundles](https://github.com/dereknguyenio/fabric-automation-bundles).
 
