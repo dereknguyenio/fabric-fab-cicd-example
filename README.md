@@ -42,11 +42,23 @@ PR opened → validate → plan (all targets)
 
 ## Setup
 
-### 1. Prerequisites
+### 1. Fork and Configure
+
+1. **Fork** this repo to your GitHub account
+2. **Edit `fabric.yml`** — change workspace names to something unique to you:
+   ```yaml
+   targets:
+     dev:
+       workspace:
+         name: my-team-analytics-dev  # ← change this
+   ```
+3. **Commit and push** the change
+4. Continue with steps 2-6 below
+
+### 2. Prerequisites
 
 - Microsoft Fabric capacity (F2+ for dev, F8+ for prod)
 - Azure service principal with Fabric API permissions
-- GitHub repository (fork or clone this repo)
 
 ### 2. Create Service Principal
 
@@ -163,6 +175,37 @@ data_quality pipeline:                    data_quality_checks
 
 The `daily_etl` pipeline runs on a cron schedule (`0 6 * * *` — 6am daily).
 In the test environment, `data_quality_checks` runs automatically after deployment as a post-deploy validation.
+
+## Troubleshooting
+
+### "Process completed with exit code 1"
+
+Check the **Doctor** step in the GitHub Actions log — it shows exactly what's missing:
+
+| Problem | Fix |
+|---------|-----|
+| `AZURE_TENANT_ID` not set | Add secret in repo Settings → Secrets |
+| `AZURE_CLIENT_ID` not set | Add secret in repo Settings → Secrets |
+| `AZURE_CLIENT_SECRET` not set | Add secret in repo Settings → Secrets |
+| `FAB_CAPACITY_ID` not set | Add variable in repo Settings → Variables |
+| Authentication failed | Check that client secret value (not ID) is correct |
+| Capacity not found | Verify capacity GUID and that it's active |
+| Workspace name conflict | Change workspace names in `fabric.yml` to be unique |
+
+### "Unresolved variables"
+
+Your `FAB_CAPACITY_ID` variable is not configured. Go to repo Settings → Secrets and variables → Actions → Variables tab → add `FAB_CAPACITY_ID` with your Fabric capacity GUID.
+
+Find your capacity GUID:
+```bash
+az rest --method get \
+  --url "https://api.fabric.microsoft.com/v1/capacities" \
+  --resource "https://api.fabric.microsoft.com"
+```
+
+### "Invalid client secret"
+
+You copied the **Secret ID** instead of the **Secret Value** from Azure. Go to Azure Portal → App registrations → your app → Certificates & secrets → create a new secret → copy the **Value** column.
 
 ## License
 

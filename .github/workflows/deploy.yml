@@ -44,20 +44,29 @@ jobs:
       - name: Install fab-bundle
         run: pip install fabric-automation-bundles
 
-      - name: Validate
-        run: fab-bundle validate -f fabric.yml
+      - name: Doctor (diagnose setup)
+        run: fab-bundle doctor
+        continue-on-error: true
+
+      - name: Show config
+        run: |
+          echo "FAB_CAPACITY_ID: ${FAB_CAPACITY_ID:-(not set)}"
+          echo "AZURE_TENANT_ID: ${AZURE_TENANT_ID:+(set)}"
+          echo "AZURE_CLIENT_ID: ${AZURE_CLIENT_ID:+(set)}"
+          echo "AZURE_CLIENT_SECRET: ${AZURE_CLIENT_SECRET:+(set)}"
+          fab-bundle validate -f fabric.yml
 
       - name: Plan dev
-        run: fab-bundle plan -f fabric.yml -t dev
+        run: fab-bundle plan -f fabric.yml --target dev
 
       - name: Deploy to dev
-        run: fab-bundle deploy -f fabric.yml -t dev -y
+        run: fab-bundle deploy -f fabric.yml --target dev -y
 
       - name: Check status
-        run: fab-bundle status -f fabric.yml -t dev
+        run: fab-bundle status -f fabric.yml --target dev
 
       - name: Check drift
-        run: fab-bundle drift -f fabric.yml -t dev
+        run: fab-bundle drift -f fabric.yml --target dev
         continue-on-error: true
 
   # ==========================================================================
