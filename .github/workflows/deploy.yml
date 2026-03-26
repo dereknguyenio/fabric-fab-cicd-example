@@ -48,12 +48,23 @@ jobs:
         run: fab-bundle doctor
         continue-on-error: true
 
-      - name: Show config
+      - name: Check configuration
         run: |
-          echo "FAB_CAPACITY_ID: ${FAB_CAPACITY_ID:-(not set)}"
-          echo "AZURE_TENANT_ID: ${AZURE_TENANT_ID:+(set)}"
-          echo "AZURE_CLIENT_ID: ${AZURE_CLIENT_ID:+(set)}"
-          echo "AZURE_CLIENT_SECRET: ${AZURE_CLIENT_SECRET:+(set)}"
+          echo "=== Environment Check ==="
+          if [ -z "$FAB_CAPACITY_ID" ]; then
+            echo "ERROR: FAB_CAPACITY_ID is not set."
+            echo "Go to repo Settings → Secrets and variables → Actions → Variables tab"
+            echo "Add: FAB_CAPACITY_ID = your Fabric capacity GUID"
+            echo ""
+            echo "Find your capacity GUID:"
+            echo "  az rest --method get --url https://api.fabric.microsoft.com/v1/capacities --resource https://api.fabric.microsoft.com"
+            exit 1
+          fi
+          echo "FAB_CAPACITY_ID: ${FAB_CAPACITY_ID}"
+          echo "AZURE_TENANT_ID: $([ -n "$AZURE_TENANT_ID" ] && echo 'set' || echo 'NOT SET — add as secret')"
+          echo "AZURE_CLIENT_ID: $([ -n "$AZURE_CLIENT_ID" ] && echo 'set' || echo 'NOT SET — add as secret')"
+          echo "AZURE_CLIENT_SECRET: $([ -n "$AZURE_CLIENT_SECRET" ] && echo 'set' || echo 'NOT SET — add as secret')"
+          echo ""
           fab-bundle validate -f fabric.yml
 
       - name: Plan dev
